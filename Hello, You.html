@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I SEE YOU</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Playfair Display font to mimic the style of the show 'YOU' -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a clean, clinical, monochrome effect */
+        body {
+            /* Using Playfair Display for a dramatic, high-contrast serif look */
+            font-family: 'Playfair Display', Georgia, serif; 
+            background-color: #000000; /* Pure Black background */
+            color: #FFFFFF; /* White text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .main-title {
+            font-size: 3rem; 
+            font-weight: 900;
+            /* Glow removed as requested */
+            text-shadow: none; 
+            letter-spacing: 0.5em; /* Large spacing retained */
+            margin-bottom: 2rem; 
+            text-align: center;
+        }
+        @media (min-width: 640px) {
+            .main-title {
+                font-size: 5rem;
+                letter-spacing: 0.6em; /* Slightly larger spacing on desktop */
+            }
+        }
+
+        #video-container {
+            width: 90%;
+            max-width: 600px;
+            height: auto;
+            /* White border, glow/shadow removed */
+            border: 8px solid #FFFFFF;
+            box-shadow: none; 
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #webcam-feed {
+            width: 100%;
+            height: auto;
+            display: block;
+            transform: scaleX(-1); /* Flips the video horizontally so it acts like a mirror */
+        }
+        #message {
+            padding: 2rem;
+            text-align: center;
+            font-size: 1.25rem;
+            color: #AAAAAA; /* Gray for initial message */
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="main-title">I SEE YOU</h1>
+
+    <div id="video-container">
+        <!-- The video element where the camera feed will be displayed -->
+        <video id="webcam-feed" autoplay playsinline></video>
+        
+        <!-- Fallback message for when camera access is denied or initializing -->
+        <div id="message" class="hidden">
+            Awaiting permission...
+        </div>
+    </div>
+    
+    <div class="mt-8 text-sm text-gray-400 max-w-lg text-center">
+        <!-- Status note for instructions/feedback -->
+        <p id="status-text">
+            (Waiting for you to grant camera permission in the browser prompt.)
+        </p>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('webcam-feed');
+        const messageElement = document.getElementById('message');
+        const statusText = document.getElementById('status-text');
+
+        // Function to request and display the camera feed
+        async function startWebcam() {
+            // Display initial awaiting message
+            videoElement.style.display = 'none';
+            messageElement.classList.remove('hidden');
+            messageElement.textContent = 'Awaiting connection...';
+            statusText.textContent = '(Please click "Allow" when the browser asks for camera access.)';
+
+            try {
+                // Request access to the user's video device (camera)
+                // If permission was previously granted and remembered by the browser, this succeeds instantly.
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true,
+                    audio: false // We only need the video feed
+                });
+
+                // Success: Attach the stream to the video element
+                videoElement.srcObject = stream;
+                
+                // Hide message and show video
+                videoElement.style.display = 'block';
+                messageElement.classList.add('hidden');
+                
+                videoElement.onloadedmetadata = (e) => {
+                    videoElement.play();
+                    // Success message
+                    statusText.textContent = 'Connection established.'; 
+                };
+
+            } catch (err) {
+                // Failure: Handle cases where permission is denied or no camera is found
+                console.error("Error accessing the camera:", err);
+                
+                // Display error message
+                videoElement.style.display = 'none';
+                messageElement.classList.remove('hidden');
+                
+                // Using pure white and bold for a stark failure message
+                messageElement.style.color = '#FFFFFF';
+                messageElement.style.fontWeight = 'bold';
+                messageElement.classList.add('p-2', 'text-center', 'text-xl');
+                
+                if (err.name === "NotAllowedError") {
+                    messageElement.textContent = "ACCESS DENIED. Subject is uncooperative.";
+                    statusText.textContent = '(They blocked access.)';
+                } else if (err.name === "NotFoundError") {
+                    messageElement.textContent = "NO CAMERA DETECTED. Surveillance mode active.";
+                    statusText.textContent = '(No camera found.)';
+                } else {
+                    messageElement.textContent = "ERROR. CONNECTION INTERRUPTED.";
+                    statusText.textContent = '(Unknown error occurred.)';
+                }
+            }
+        }
+
+        // Start the process when the window loads
+        window.onload = startWebcam;
+    </script>
+</body>
+</html>
